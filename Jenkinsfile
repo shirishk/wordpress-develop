@@ -24,7 +24,7 @@ podTemplate(label: label, containers: [
                         git credentialsId: 'a167a167-d53c-43b4-923c-2da581f74bba', url: 'http://early-jaguar-gitlab-ce/root/wordpress-develop.git'
                     }
                 }
-                // Lunch Container
+                // Launch Container
                 stage('Environment Preparation for Wordpress') {
                     container('buildwordpress') {
                         // Install dependancies and build project
