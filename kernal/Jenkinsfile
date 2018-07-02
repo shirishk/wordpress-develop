@@ -1,0 +1,31 @@
+def label = "mypod-${UUID.randomUUID().toString()}"
+// Create pod template using desired image.
+podTemplate(label: label, containers: [
+    containerTemplate(name: 'buildubuntu', image: 'zanakabhijit/build-kernal:v2', ttyEnabled: true, command: 'cat')
+  ]) {
+    node(label) {
+        // Kafka settings to capture jenkins logs
+        container('buildubuntu') {
+            // Install dependancies and build project.
+            stage('Build project') {
+                sh 'date'
+                git branch: 'develop', credentialsId: 'ecad579d-f11c-44e2-9695-2d441edb96a9', url: 'http://10.21.236.87:8080/root/ubuntu-xenial.git'
+                sh 'date'
+                sh 'pwd'
+                sh 'fakeroot debian/rules clean'
+                sh 'date'
+                sh 'fakeroot debian/rules binary-headers binary-generic binary-perarch'
+                sh 'date'
+            }
+            // Create tar.gz package
+            stage('Create Package') {
+                sh 'ls ../'
+                sh "tar -czvf kern-package.tar.gz ../*.deb"
+            }
+            // Upload to nexus
+            stage('Add to Nexus artifacts') {
+                nexusArtifactUploader artifacts: [[artifactId: 'kl_artId1', classifier: 'kern-package', file: 'kern-package.tar.gz', type: 'tar.gz']], credentialsId: '20ecc969-8a11-4b3d-94aa-6c5b5a74c6dd', groupId: 'Kernal', nexusUrl: '10.21.236.86', nexusVersion: 'nexus3', protocol: 'http', repository: 'kern-package', version: '1.0.0.'+env.BUILD_NUMBER
+            }
+        }
+    }
+  } 
