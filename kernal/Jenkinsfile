@@ -1,15 +1,34 @@
 def label = "mypod-${UUID.randomUUID().toString()}"
 // Create pod template using desired image.
 podTemplate(label: label, containers: [
-    containerTemplate(name: 'buildubuntu', image: 'zanakabhijit/build-kernal:v2', ttyEnabled: true, command: 'cat')
-  ]) {
+    containerTemplate(name: 'jnlp', image: '10.21.236.86:5000/jnlp-slave', alwaysPullImage: true, args: '${computer.jnlpmac} ${computer.name}', workingDir: '/home/jenkins/jenkins-pure-flb/'+env.BUILD_NUMBER),
+    containerTemplate(name: 'buildubuntu', image: '10.21.236.86:5000/build-kernal', alwaysPullImage: true, workingDir: '/home/jenkins/jenkins-pure-flb/'+env.BUILD_NUMBER,  ttyEnabled: true, command: 'cat')
+    ], 
+    volumes: [
+    persistentVolumeClaim(mountPath: '/home/jenkins/jenkins-pure-flb', claimName: 'jenkins-pure-flb', readOnly: false)
+    ],
+    imagePullSecrets: [ 'dev-jenkins' ])
+   
+    {
     node(label) {
-        // Kafka settings to capture jenkins logs
-        container('buildubuntu') {
+        sh 'hostname'
+        sh 'whoami'
+        sh 'df -h'
+        container('buildubuntu'){
             // Install dependancies and build project.
+            // stage('Distribute Code') {
+            //     sh 'ls -ll /home/jenkins/workspace'
+            //     sh 'cp -R /home/jenkins/* /home/jenkins2/'
+            //     sh 'ls -ll /home/jenkins2/workspace'
+            // }
             stage('Build project') {
                 sh 'date'
-                git branch: 'develop', credentialsId: 'ecad579d-f11c-44e2-9695-2d441edb96a9', url: 'http://10.21.236.87:8080/root/ubuntu-xenial.git'
+                sh 'pwd'
+                // sh 'cd /home/jenkins2'
+                // dir('/home/jenkins2') {
+                     
+                // }
+                git branch: 'develop', credentialsId: 'a630c220-0289-4fbe-86d8-3e436306a782', url: 'http://10.21.236.87:8080/root/ubuntu-xenial.git'
                 sh 'date'
                 sh 'pwd'
                 sh 'fakeroot debian/rules clean'
@@ -24,8 +43,8 @@ podTemplate(label: label, containers: [
             }
             // Upload to nexus
             stage('Add to Nexus artifacts') {
-                nexusArtifactUploader artifacts: [[artifactId: 'kl_artId1', classifier: 'kern-package', file: 'kern-package.tar.gz', type: 'tar.gz']], credentialsId: '20ecc969-8a11-4b3d-94aa-6c5b5a74c6dd', groupId: 'Kernal', nexusUrl: '10.21.236.86', nexusVersion: 'nexus3', protocol: 'http', repository: 'kern-package', version: '1.0.0.'+env.BUILD_NUMBER
+                nexusArtifactUploader artifacts: [[artifactId: 'kl_artId1', classifier: 'kern-package', file: 'kern-package.tar.gz', type: 'tar.gz']], credentialsId: '6b1597b0-babb-490f-9487-df4224621136', groupId: 'Kernal', nexusUrl: '10.21.236.86', nexusVersion: 'nexus3', protocol: 'http', repository: 'kern-package', version: '1.0.0.'+env.BUILD_NUMBER
             }
         }
     }
-  } 
+  }    
